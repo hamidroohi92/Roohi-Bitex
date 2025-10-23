@@ -30,17 +30,21 @@ function OrderBookRow({ level, isBid, isUpdating }: OrderBookRowProps) {
           ? isBid
             ? "bg-green-500/20 text-green-100"
             : "bg-red-500/20 text-red-100"
-          : "hover:bg-gray-700/50"
+          : "hover:bg-gray-700/50 dark:hover:bg-gray-600/50"
       }`}
     >
       <div className="flex-1 text-left">
-        <span className="text-gray-300">{level.price.toFixed(2)}</span>
+        <span className="text-gray-300 dark:text-gray-300">
+          {level.price.toFixed(2)}
+        </span>
       </div>
       <div className="flex-1 text-center">
-        <span className="text-gray-400">{level.quantity.toFixed(6)}</span>
+        <span className="text-gray-400 dark:text-gray-400">
+          {level.quantity.toFixed(6)}
+        </span>
       </div>
       <div className="flex-1 text-right">
-        <span className="text-gray-500">
+        <span className="text-gray-500 dark:text-gray-500">
           {level.cumulative?.toFixed(6) || "0.000000"}
         </span>
       </div>
@@ -95,11 +99,11 @@ export default function OrderBook() {
   const formatCumulative = (cumulative: number) => cumulative.toFixed(6);
 
   return (
-    <div className="h-full bg-gray-900 text-white">
+    <div className="h-full bg-gray-900 dark:bg-gray-900 text-white">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-3">
+      <div className="bg-gray-800 dark:bg-gray-800 border-b border-gray-700 dark:border-gray-600 p-3">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Order Book</h2>
+          <h2 className="text-lg font-semibold text-white">Order Book</h2>
           <div
             className={`w-2 h-2 rounded-full ${
               isConnected ? "bg-green-500" : "bg-red-500"

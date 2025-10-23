@@ -9,15 +9,18 @@ import {
   Time,
   CandlestickData,
   CandlestickSeries,
+  ColorType,
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+import { useTheme } from "@/components/providers/themeContext";
 
 export default function Chart() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const candles = useSelector((state: RootState) => state.symbol.candles);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     new Trade().initialize();
@@ -27,6 +30,26 @@ export default function Chart() {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
+      layout: {
+        background: {
+          type: ColorType.Solid,
+          color: theme === "dark" ? "#1f2937" : "#ffffff",
+        },
+        textColor: theme === "dark" ? "#f3f4f6" : "#1f2937",
+      },
+      grid: {
+        vertLines: { color: theme === "dark" ? "#374151" : "#e5e7eb" },
+        horzLines: { color: theme === "dark" ? "#374151" : "#e5e7eb" },
+      },
+      crosshair: {
+        mode: 1,
+      },
+      rightPriceScale: {
+        borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      },
+      timeScale: {
+        borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+      },
     });
 
     const series = chart.addSeries(CandlestickSeries, {
@@ -41,7 +64,7 @@ export default function Chart() {
     seriesRef.current = series;
 
     return () => chart.remove();
-  }, []);
+  }, [theme]);
 
   // setData when candles change
   useEffect(() => {
