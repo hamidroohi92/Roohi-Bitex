@@ -1,14 +1,14 @@
 "use client";
 
 import { store } from "@/redux/store";
+import { ThemeProvider } from "next-themes";
 import { Provider } from "react-redux";
-import { ThemeProvider } from "./themeContext";
 
 //providers component for the whole app
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <ThemeProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {children}
       </ThemeProvider>
     </Provider>

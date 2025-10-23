@@ -11,9 +11,9 @@ import {
   CandlestickSeries,
   ColorType,
 } from "lightweight-charts";
+import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { useTheme } from "@/components/providers/themeContext";
 
 export default function Chart() {
   const chartContainerRef = useRef<HTMLDivElement>(null);

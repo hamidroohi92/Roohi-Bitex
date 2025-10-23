@@ -1,21 +1,22 @@
 import ChartBox from "@/components/homePage/chartBox";
 import OrderBook from "@/components/homePage/orderBook";
 import OrderTicket from "@/components/homePage/orderTicket";
+import PageCard from "@/components/ui/pageCard";
 
 export default function Home() {
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       <div className="flex flex-col gap-4 w-full lg:w-[60%]">
-        <div className="h-[50vh] min-h-[300px] bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg transition-colors duration-300">
+        <PageCard className="h-[50vh] min-h-[300px]">
           <ChartBox />
-        </div>
-        <div className="h-fit bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg transition-colors duration-300">
+        </PageCard>
+        <PageCard className="h-fit">
           <OrderTicket />
-        </div>
+        </PageCard>
       </div>
-      <div className="w-full lg:w-[40%] bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg transition-colors duration-300">
+      <PageCard className="w-full lg:w-[40%]">
         <OrderBook />
-      </div>
+      </PageCard>
     </div>
   );
 }
