@@ -16,12 +16,12 @@ export default function Header() {
         <h1 className="text-gray-800 dark:text-gray-200 font-semibold">
           Hi, Hamid Roohi
         </h1>
-        <h2 className="block md:hidden text-gray-800 dark:text-gray-200 font-semibold">
+        <h2 className="block max-md:hidden text-gray-800 dark:text-gray-200 font-semibold">
           Balance: {formatCurrency(balance.usd)}
         </h2>
       </div>
       <div className="flex items-center gap-4">
-        <h2 className="hidden md:block text-gray-800 dark:text-gray-200 font-semibold">
+        <h2 className="hidden max-md:block text-gray-800 dark:text-gray-200 font-semibold">
           Balance: {formatCurrency(balance.usd)}
         </h2>
         {theme && <ThemeToggle />}
