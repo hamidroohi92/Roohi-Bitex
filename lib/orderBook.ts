@@ -5,19 +5,23 @@ import {
   initializeOrderBook,
   applyOrderBookUpdate,
 } from "@/redux/slices/orderBookSlice";
+import { setSocketStatus } from "@/redux/slices/appSlice";
 
 class OrderBookService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 10;
   private reconnectDelay = 1000;
   private isInitialized = false;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private currentSymbol: string = "btcusdt";
 
   connect(symbol: string = "btcusdt") {
     if (this.ws?.readyState === WebSocket.OPEN) {
       return;
     }
 
+    this.currentSymbol = symbol;
     const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@depth@100ms`;
 
     try {
@@ -26,6 +30,9 @@ class OrderBookService {
       this.ws.onopen = () => {
         console.log("Order book WebSocket connected");
         store.dispatch(setConnected(true));
+        store.dispatch(
+          setSocketStatus({ socket: "orderBook", status: "connected" })
+        );
         this.reconnectAttempts = 0;
 
         // Get initial snapshot
@@ -44,14 +51,23 @@ class OrderBookService {
       this.ws.onclose = () => {
         console.log("Order book WebSocket disconnected");
         store.dispatch(setConnected(false));
+        store.dispatch(
+          setSocketStatus({ socket: "orderBook", status: "disconnected" })
+        );
         this.handleReconnect(symbol);
       };
 
       this.ws.onerror = (error) => {
         console.log("Order book WebSocket error:", error);
+        store.dispatch(
+          setSocketStatus({ socket: "orderBook", status: "disconnected" })
+        );
       };
     } catch (error) {
       console.log("Failed to create order book WebSocket:", error);
+      store.dispatch(
+        setSocketStatus({ socket: "orderBook", status: "disconnected" })
+      );
     }
   }
 
@@ -94,19 +110,46 @@ class OrderBookService {
         `Attempting to reconnect order book WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
       );
 
-      setTimeout(() => {
+      store.dispatch(
+        setSocketStatus({ socket: "orderBook", status: "reconnecting" })
+      );
+
+      // Clear any existing timeout
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+      }
+
+      // Exponential backoff with jitter
+      const delay = Math.min(
+        this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1) +
+          Math.random() * 1000,
+        30000 // Max 30 seconds
+      );
+
+      this.reconnectTimeout = setTimeout(() => {
         this.connect(symbol);
-      }, this.reconnectDelay * this.reconnectAttempts);
+      }, delay);
     } else {
       console.log("Max reconnection attempts reached for order book WebSocket");
+      store.dispatch(
+        setSocketStatus({ socket: "orderBook", status: "disconnected" })
+      );
     }
   }
 
   disconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;
       store.dispatch(setConnected(false));
+      store.dispatch(
+        setSocketStatus({ socket: "orderBook", status: "disconnected" })
+      );
       this.isInitialized = false;
     }
   }

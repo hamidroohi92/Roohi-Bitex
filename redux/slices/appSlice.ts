@@ -1,9 +1,13 @@
-import { AppState } from "@/types/state";
-import { createSlice } from "@reduxjs/toolkit";
+import { AppState, ConnectionStatus } from "@/types/state";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const initialState: AppState = {
   isLoading: false,
   darkMode: false,
+  socketStatus: {
+    orderBook: "disconnected",
+    trade: "disconnected",
+  },
 };
 
 const appSlice = createSlice({
@@ -16,8 +20,17 @@ const appSlice = createSlice({
     setDarkMode: (state, action) => {
       state.darkMode = action.payload;
     },
+    setSocketStatus: (
+      state,
+      action: PayloadAction<{
+        socket: "orderBook" | "trade";
+        status: ConnectionStatus;
+      }>
+    ) => {
+      state.socketStatus[action.payload.socket] = action.payload.status;
+    },
   },
 });
 
-export const { setIsLoading, setDarkMode } = appSlice.actions;
+export const { setIsLoading, setDarkMode, setSocketStatus } = appSlice.actions;
 export default appSlice.reducer;

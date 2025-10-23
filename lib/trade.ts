@@ -1,4 +1,5 @@
 import { setCandles, setCurrentPrice } from "@/redux/slices/symbolSlice";
+import { setSocketStatus } from "@/redux/slices/appSlice";
 import { store } from "@/redux/store";
 import { Candle } from "@/types/trade";
 import { BinanceApi } from "./binanceApi";
@@ -8,6 +9,10 @@ export class Trade {
   private currentCandle: Candle | null = null;
   private candles: Candle[] = [];
   private symbol: string = "BTCUSDT";
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 10;
+  private reconnectDelay = 1000;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   public async initialize(symbol: string = "BTCUSDT") {
     this.symbol = symbol;
@@ -54,15 +59,24 @@ export class Trade {
     );
 
     this.priceSocket.onopen = () => {
-      console.log("WebSocket connected for real-time updates");
+      console.log("Trade WebSocket connected for real-time updates");
+      store.dispatch(setSocketStatus({ socket: "trade", status: "connected" }));
+      this.reconnectAttempts = 0;
     };
 
     this.priceSocket.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      console.error("Trade WebSocket error:", error);
+      store.dispatch(
+        setSocketStatus({ socket: "trade", status: "disconnected" })
+      );
     };
 
     this.priceSocket.onclose = () => {
-      console.log("WebSocket connection closed");
+      console.log("Trade WebSocket connection closed");
+      store.dispatch(
+        setSocketStatus({ socket: "trade", status: "disconnected" })
+      );
+      this.handleReconnect();
     };
 
     this.priceSocket.onmessage = (event: MessageEvent) => {
@@ -102,10 +116,52 @@ export class Trade {
     };
   }
 
+  private handleReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(
+        `Attempting to reconnect trade WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+      );
+
+      store.dispatch(
+        setSocketStatus({ socket: "trade", status: "reconnecting" })
+      );
+
+      // Clear any existing timeout
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+      }
+
+      // Exponential backoff with jitter
+      const delay = Math.min(
+        this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1) +
+          Math.random() * 1000,
+        30000 // Max 30 seconds
+      );
+
+      this.reconnectTimeout = setTimeout(() => {
+        this.startWebSocket();
+      }, delay);
+    } else {
+      console.log("Max reconnection attempts reached for trade WebSocket");
+      store.dispatch(
+        setSocketStatus({ socket: "trade", status: "disconnected" })
+      );
+    }
+  }
+
   public disconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
     if (this.priceSocket) {
       this.priceSocket.close();
       this.priceSocket = null;
+      store.dispatch(
+        setSocketStatus({ socket: "trade", status: "disconnected" })
+      );
     }
   }
 }

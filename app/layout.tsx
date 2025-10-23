@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PageUiLayout from "@/components/layout/pageUiLayout";
 import Providers from "@/components/providers";
+import ConnectionStatus from "@/components/ui/connectionStatus";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,7 @@ export default function RootLayout({
       >
         <Providers>
           <PageUiLayout>{children}</PageUiLayout>
+          <ConnectionStatus />
         </Providers>
       </body>
     </html>

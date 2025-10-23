@@ -5,9 +5,17 @@ import {
   SimulatedBalance,
 } from "./trade";
 
+export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
+
+export interface SocketStatus {
+  orderBook: ConnectionStatus;
+  trade: ConnectionStatus;
+}
+
 export interface AppState {
   isLoading: boolean;
   darkMode: boolean;
+  socketStatus: SocketStatus;
 }
 
 export interface SymbolState {
