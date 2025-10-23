@@ -15,6 +15,7 @@ import {
   updateBalance,
   resetTicket,
 } from "@/redux/slices/orderTicketSlice";
+import { formatCurrency } from "@/utils";
 
 export default function OrderTicket() {
   const dispatch = useDispatch();
@@ -125,7 +126,6 @@ export default function OrderTicket() {
     );
   };
 
-  const formatCurrency = (value: number) => value.toFixed(2);
   const formatQuantity = (value: number) => value.toFixed(6);
 
   return (
@@ -137,7 +137,9 @@ export default function OrderTicket() {
       <div className="space-y-4">
         {/* Side Selection */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-300">Side</label>
+          <label className="block text-sm font-medium mb-2 text-gray-300">
+            Side
+          </label>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleSideChange("buy")}
@@ -180,7 +182,9 @@ export default function OrderTicket() {
 
           {/* Cost Input */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">Cost (USD)</label>
+            <label className="block text-sm font-medium mb-2 text-gray-300">
+              Cost (USD)
+            </label>
             <input
               type="number"
               step="0.01"
@@ -195,7 +199,9 @@ export default function OrderTicket() {
         <div className="grid grid-cols-2 gap-4">
           {/* Estimated Fill Price */}
           <div className="bg-gray-800 dark:bg-gray-800 p-3 rounded">
-            <div className="text-gray-400 dark:text-gray-400 text-sm">Estimated Fill Price</div>
+            <div className="text-gray-400 dark:text-gray-400 text-sm">
+              Estimated Fill Price
+            </div>
             <div className="text-white font-medium text-lg">
               ${formatCurrency(estimatedFillPrice)}
             </div>
@@ -203,7 +209,9 @@ export default function OrderTicket() {
 
           {/* Estimated PnL */}
           <div className="bg-gray-800 dark:bg-gray-800 p-3 rounded">
-            <div className="text-gray-400 dark:text-gray-400 text-sm">Estimated PnL (±0.5%)</div>
+            <div className="text-gray-400 dark:text-gray-400 text-sm">
+              Estimated PnL (±0.5%)
+            </div>
             <div
               className={`font-medium text-lg ${
                 ticket.estimatedPnL >= 0 ? "text-green-400" : "text-red-400"
