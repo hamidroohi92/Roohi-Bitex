@@ -1,11 +1,15 @@
+"use client";
+
 import ThemeToggle from "@/components/ui/themeToggle";
 import { RootState } from "@/types/state";
 import { formatCurrency } from "@/utils";
+import { useTheme } from "next-themes";
 import { useSelector } from "react-redux";
 
 //Header component as a global top bar for the app
 export default function Header() {
   const { balance } = useSelector((state: RootState) => state.orderTicket);
+  const { theme } = useTheme();
   return (
     <div className="flex justify-between items-center h-[10vh] bg-white dark:bg-gray-800 rounded-2xl p-4 transition-colors duration-300">
       <div>
@@ -20,7 +24,7 @@ export default function Header() {
         <h2 className="hidden md:block text-gray-800 dark:text-gray-200 font-semibold">
           Balance: {formatCurrency(balance.usd)}
         </h2>
-        <ThemeToggle />
+        {theme && <ThemeToggle />}
       </div>
     </div>
   );

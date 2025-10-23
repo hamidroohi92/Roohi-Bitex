@@ -61,6 +61,7 @@ class OrderBookService {
         `https://api.binance.com/api/v3/depth?symbol=${symbol.toUpperCase()}&limit=1000`
       );
       const data = await response.json();
+      console.log("snap shot data", data);
 
       store.dispatch(
         initializeOrderBook({

@@ -95,8 +95,6 @@ export default function OrderBook() {
   }, [isInitialized, data.bids, data.asks]);
 
   const formatPrice = (price: number) => price.toFixed(2);
-  const formatQuantity = (quantity: number) => quantity.toFixed(6);
-  const formatCumulative = (cumulative: number) => cumulative.toFixed(6);
 
   return (
     <div className="h-full bg-gray-900 dark:bg-gray-900 text-white">

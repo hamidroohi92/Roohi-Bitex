@@ -1,5 +1,5 @@
-import { OrderBookState, OrderBookData } from "@/types/state";
-import { OrderBookLevel, OrderBookUpdate } from "@/types/trade";
+import { OrderBookState } from "@/types/state";
+import { OrderBookData, OrderBookLevel, OrderBookUpdate } from "@/types/trade";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const initialOrderBookData: OrderBookData = {
@@ -111,11 +111,7 @@ const orderBookSlice = createSlice({
 
       // Sequence check
       if (update.U !== state.lastUpdateId + 1) {
-        console.warn(
-          `Order book sequence mismatch. Expected: ${
-            state.lastUpdateId + 1
-          }, Got: ${update.U}`
-        );
+        //skip if the update is not the next update
         return;
       }
 
