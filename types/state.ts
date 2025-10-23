@@ -1,4 +1,4 @@
-import { Candle } from "./trade";
+import { Candle, OrderBookData } from "./trade";
 
 export interface AppState {
   isLoading: boolean;
@@ -11,7 +11,15 @@ export interface SymbolState {
   candles: Candle[];
 }
 
+export interface OrderBookState {
+  data: OrderBookData;
+  isConnected: boolean;
+  lastUpdateId: number;
+  isInitialized: boolean;
+}
+
 export interface RootState {
   app: AppState;
   symbol: SymbolState;
+  orderBook: OrderBookState;
 }

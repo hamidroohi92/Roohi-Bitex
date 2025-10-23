@@ -10,11 +10,11 @@ export default function Home() {
           <ChartBox />
         </div>
         <div className="h-[40%] bg-gray-300 rounded-2xl p-4">
-          <OrderBook />
+          <OrderTicket />
         </div>
       </div>
       <div className="w-[40%]  bg-gray-300 rounded-2xl p-4">
-        <OrderTicket />
+        <OrderBook />
       </div>
     </div>
   );
