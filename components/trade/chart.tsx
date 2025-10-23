@@ -20,6 +20,7 @@ export default function Chart() {
   const candles = useSelector((state: RootState) => state.symbol.candles);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const hasLoaded = useRef(false);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -74,6 +75,8 @@ export default function Chart() {
   useEffect(() => {
     if (!seriesRef.current || candles.length === 0) return;
 
+    console.log("candles", candles);
+
     // Convert to valid lightweight format
     const formattedCandles: CandlestickData<Time>[] = candles.map((candle) => ({
       time: Math.floor(candle.time / 1000) as Time, // UNIX seconds
@@ -83,9 +86,10 @@ export default function Chart() {
       close: candle.close,
     }));
 
-    if (candles.length === 1) {
+    if (!hasLoaded.current) {
       // First load
       seriesRef.current.setData(formattedCandles);
+      hasLoaded.current = true;
     } else {
       // Only update the last candle
       seriesRef.current.update(formattedCandles[formattedCandles.length - 1]);

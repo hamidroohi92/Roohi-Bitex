@@ -37,7 +37,7 @@ class OrderBookService {
           const data: OrderBookUpdate = JSON.parse(event.data);
           this.handleOrderBookUpdate(data);
         } catch (error) {
-          console.error("Error parsing order book data:", error);
+          console.log("Error parsing order book data:", error);
         }
       };
 
@@ -48,10 +48,10 @@ class OrderBookService {
       };
 
       this.ws.onerror = (error) => {
-        console.error("Order book WebSocket error:", error);
+        console.log("Order book WebSocket error:", error);
       };
     } catch (error) {
-      console.error("Failed to create order book WebSocket:", error);
+      console.log("Failed to create order book WebSocket:", error);
     }
   }
 
@@ -97,9 +97,7 @@ class OrderBookService {
         this.connect(symbol);
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
-      console.error(
-        "Max reconnection attempts reached for order book WebSocket"
-      );
+      console.log("Max reconnection attempts reached for order book WebSocket");
     }
   }
 
