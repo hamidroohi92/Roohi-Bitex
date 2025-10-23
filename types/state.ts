@@ -12,10 +12,17 @@ export interface SocketStatus {
   trade: ConnectionStatus;
 }
 
+export interface LatencyInfo {
+  orderBook: number; // milliseconds
+  trade: number; // milliseconds
+  lastUpdate: number; // timestamp
+}
+
 export interface AppState {
   isLoading: boolean;
   darkMode: boolean;
   socketStatus: SocketStatus;
+  latency: LatencyInfo;
 }
 
 export interface SymbolState {

@@ -5,7 +5,7 @@ import {
   initializeOrderBook,
   applyOrderBookUpdate,
 } from "@/redux/slices/orderBookSlice";
-import { setSocketStatus } from "@/redux/slices/appSlice";
+import { setSocketStatus, setLatency } from "@/redux/slices/appSlice";
 
 class OrderBookService {
   private ws: WebSocket | null = null;
@@ -40,9 +40,10 @@ class OrderBookService {
       };
 
       this.ws.onmessage = (event) => {
+        const messageTime = Date.now();
         try {
           const data: OrderBookUpdate = JSON.parse(event.data);
-          this.handleOrderBookUpdate(data);
+          this.handleOrderBookUpdate(data, messageTime);
         } catch (error) {
           console.log("Error parsing order book data:", error);
         }
@@ -94,13 +95,24 @@ class OrderBookService {
     }
   }
 
-  private handleOrderBookUpdate(update: OrderBookUpdate) {
+  private handleOrderBookUpdate(update: OrderBookUpdate, messageTime: number) {
     if (!this.isInitialized) {
       console.log("Order book not initialized, skipping update");
       return;
     }
 
+    // Calculate latency: time from message receipt to UI update
+    const updateStartTime = performance.now();
+
     store.dispatch(applyOrderBookUpdate(update));
+
+    // Use requestAnimationFrame to measure when the UI actually updates
+    requestAnimationFrame(() => {
+      const updateEndTime = performance.now();
+      const latency = updateEndTime - updateStartTime;
+
+      store.dispatch(setLatency({ socket: "orderBook", latency }));
+    });
   }
 
   private handleReconnect(symbol: string) {

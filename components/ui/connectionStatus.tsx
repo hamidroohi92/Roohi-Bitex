@@ -4,7 +4,9 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/types/state";
 
 export default function ConnectionStatus() {
-  const { socketStatus } = useSelector((state: RootState) => state.app);
+  const { socketStatus, latency } = useSelector(
+    (state: RootState) => state.app
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -43,6 +45,16 @@ export default function ConnectionStatus() {
       default:
         return "?";
     }
+  };
+
+  const getLatencyColor = (latency: number) => {
+    if (latency < 10) return "text-green-600 dark:text-green-400";
+    if (latency < 50) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
+  };
+
+  const formatLatency = (latency: number) => {
+    return `${latency.toFixed(1)}ms`;
   };
 
   const isAnyReconnecting =
@@ -99,6 +111,13 @@ export default function ConnectionStatus() {
               >
                 {getStatusText(socketStatus.orderBook)}
               </span>
+              {socketStatus.orderBook === "connected" && (
+                <span
+                  className={`text-xs ${getLatencyColor(latency.orderBook)}`}
+                >
+                  {formatLatency(latency.orderBook)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -125,6 +144,11 @@ export default function ConnectionStatus() {
               >
                 {getStatusText(socketStatus.trade)}
               </span>
+              {socketStatus.trade === "connected" && (
+                <span className={`text-xs ${getLatencyColor(latency.trade)}`}>
+                  {formatLatency(latency.trade)}
+                </span>
+              )}
             </div>
           </div>
         </div>

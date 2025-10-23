@@ -8,6 +8,11 @@ const initialState: AppState = {
     orderBook: "disconnected",
     trade: "disconnected",
   },
+  latency: {
+    orderBook: 0,
+    trade: 0,
+    lastUpdate: 0,
+  },
 };
 
 const appSlice = createSlice({
@@ -29,8 +34,19 @@ const appSlice = createSlice({
     ) => {
       state.socketStatus[action.payload.socket] = action.payload.status;
     },
+    setLatency: (
+      state,
+      action: PayloadAction<{
+        socket: "orderBook" | "trade";
+        latency: number;
+      }>
+    ) => {
+      state.latency[action.payload.socket] = action.payload.latency;
+      state.latency.lastUpdate = Date.now();
+    },
   },
 });
 
-export const { setIsLoading, setDarkMode, setSocketStatus } = appSlice.actions;
+export const { setIsLoading, setDarkMode, setSocketStatus, setLatency } =
+  appSlice.actions;
 export default appSlice.reducer;

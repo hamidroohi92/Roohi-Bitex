@@ -1,5 +1,5 @@
 import { setCandles, setCurrentPrice } from "@/redux/slices/symbolSlice";
-import { setSocketStatus } from "@/redux/slices/appSlice";
+import { setSocketStatus, setLatency } from "@/redux/slices/appSlice";
 import { store } from "@/redux/store";
 import { Candle } from "@/types/trade";
 import { BinanceApi } from "./binanceApi";
@@ -80,6 +80,7 @@ export class Trade {
     };
 
     this.priceSocket.onmessage = (event: MessageEvent) => {
+      const messageTime = Date.now();
       const tradeData = JSON.parse(event.data);
       const price = parseFloat(tradeData.p);
       const quantity = parseFloat(tradeData.q);
@@ -110,9 +111,20 @@ export class Trade {
       // Keep only last 60 candles
       if (this.candles.length > 60) this.candles.shift();
 
+      // Calculate latency: time from message receipt to UI update
+      const updateStartTime = performance.now();
+
       // Update Redux store with all candles including current
       store.dispatch(setCandles([...this.candles, this.currentCandle]));
       store.dispatch(setCurrentPrice(price));
+
+      // Use requestAnimationFrame to measure when the UI actually updates
+      requestAnimationFrame(() => {
+        const updateEndTime = performance.now();
+        const latency = updateEndTime - updateStartTime;
+
+        store.dispatch(setLatency({ socket: "trade", latency }));
+      });
     };
   }
 
