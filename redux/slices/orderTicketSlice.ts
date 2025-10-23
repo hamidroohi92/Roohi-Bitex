@@ -5,6 +5,10 @@ import {
 } from "@/types/state";
 import { OrderSide } from "@/types/trade";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  loadBalanceFromStorage,
+  saveBalanceToStorage,
+} from "@/utils/localStorage";
 
 const initialTicketData: OrderTicketData = {
   side: "buy",
@@ -17,10 +21,18 @@ const initialTicketData: OrderTicketData = {
   errorMessage: "",
 };
 
-const initialBalance: SimulatedBalance = {
-  usd: 10000,
-  btc: 0.25,
+// Load balance from localStorage or use default
+const getInitialBalance = (): SimulatedBalance => {
+  const storedBalance = loadBalanceFromStorage();
+  return (
+    storedBalance || {
+      usd: 10000,
+      btc: 0.25,
+    }
+  );
 };
+
+const initialBalance: SimulatedBalance = getInitialBalance();
 
 const initialState: OrderTicketState = {
   ticket: initialTicketData,
@@ -62,6 +74,8 @@ const orderTicketSlice = createSlice({
     },
     updateBalance: (state, action: PayloadAction<SimulatedBalance>) => {
       state.balance = action.payload;
+      // Save to localStorage whenever balance is updated
+      saveBalanceToStorage(action.payload);
     },
     resetTicket: (state) => {
       state.ticket = initialTicketData;
