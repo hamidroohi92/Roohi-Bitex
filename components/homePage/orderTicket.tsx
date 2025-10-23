@@ -129,15 +129,17 @@ export default function OrderTicket() {
   const formatQuantity = (value: number) => value.toFixed(6);
 
   return (
-    <div className="h-full bg-gray-900 dark:bg-gray-900 text-white p-4">
+    <div className="h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white p-4">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold mb-2 text-white">Order Ticket</h2>
+        <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
+          Order Ticket
+        </h2>
       </div>
 
       <div className="space-y-4">
         {/* Side Selection */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-300">
+          <label className="block text-sm font-medium mb-2 text-gray-600 dark:text-gray-300">
             Side
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -146,7 +148,7 @@ export default function OrderTicket() {
               className={`py-2 px-4 rounded font-medium transition-colors ${
                 ticket.side === "buy"
                   ? "bg-green-600 text-white"
-                  : "bg-gray-700 dark:bg-gray-700 text-gray-300 hover:bg-gray-600 dark:hover:bg-gray-600"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               BUY
@@ -156,7 +158,7 @@ export default function OrderTicket() {
               className={`py-2 px-4 rounded font-medium transition-colors ${
                 ticket.side === "sell"
                   ? "bg-red-600 text-white"
-                  : "bg-gray-700 dark:bg-gray-700 text-gray-300 hover:bg-gray-600 dark:hover:bg-gray-600"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               SELL
@@ -167,7 +169,7 @@ export default function OrderTicket() {
         <div className="grid grid-cols-2 gap-4">
           {/* Quantity Input */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
+            <label className="block text-sm font-medium mb-2 text-gray-600 dark:text-gray-300">
               Quantity (BTC)
             </label>
             <input
@@ -175,14 +177,14 @@ export default function OrderTicket() {
               step="0.000001"
               value={ticket.quantity || ""}
               onChange={(e) => handleQuantityChange(e.target.value)}
-              className="w-full bg-gray-800 dark:bg-gray-800 border border-gray-600 dark:border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
               placeholder="0.000000"
             />
           </div>
 
           {/* Cost Input */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
+            <label className="block text-sm font-medium mb-2 text-gray-600 dark:text-gray-300">
               Cost (USD)
             </label>
             <input
@@ -190,7 +192,7 @@ export default function OrderTicket() {
               step="0.01"
               value={ticket.cost || ""}
               onChange={(e) => handleCostChange(e.target.value)}
-              className="w-full bg-gray-800 dark:bg-gray-800 border border-gray-600 dark:border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
               placeholder="0.00"
             />
           </div>
@@ -198,23 +200,25 @@ export default function OrderTicket() {
 
         <div className="grid grid-cols-2 gap-4">
           {/* Estimated Fill Price */}
-          <div className="bg-gray-800 dark:bg-gray-800 p-3 rounded">
-            <div className="text-gray-400 dark:text-gray-400 text-sm">
+          <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
               Estimated Fill Price
             </div>
-            <div className="text-white font-medium text-lg">
+            <div className="text-gray-900 dark:text-white font-medium text-lg">
               ${formatCurrency(estimatedFillPrice)}
             </div>
           </div>
 
           {/* Estimated PnL */}
-          <div className="bg-gray-800 dark:bg-gray-800 p-3 rounded">
-            <div className="text-gray-400 dark:text-gray-400 text-sm">
+          <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
               Estimated PnL (±0.5%)
             </div>
             <div
               className={`font-medium text-lg ${
-                ticket.estimatedPnL >= 0 ? "text-green-400" : "text-red-400"
+                ticket.estimatedPnL >= 0
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
               }`}
             >
               {ticket.estimatedPnL >= 0 ? "+" : ""}$
@@ -232,7 +236,7 @@ export default function OrderTicket() {
               ? ticket.side === "buy"
                 ? "bg-green-600 hover:bg-green-700 text-white"
                 : "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
           }`}
         >
           {ticket.isValid

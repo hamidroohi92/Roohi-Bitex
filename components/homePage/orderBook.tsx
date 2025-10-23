@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/types/state";
 import { orderBookService } from "@/lib/orderBook";
 import { OrderBookLevel } from "@/types/trade";
@@ -16,12 +16,17 @@ function OrderBookRow({ level, isBid, isUpdating }: OrderBookRowProps) {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    if (isUpdating) {
-      setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 1000);
-      return () => clearTimeout(timer);
+    if (isUpdating && !isAnimating) {
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      requestAnimationFrame(() => {
+        setIsAnimating(true);
+        const timer = setTimeout(() => {
+          setIsAnimating(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+      });
     }
-  }, [isUpdating]);
+  }, [isUpdating, isAnimating]);
 
   return (
     <div
@@ -30,16 +35,16 @@ function OrderBookRow({ level, isBid, isUpdating }: OrderBookRowProps) {
           ? isBid
             ? "bg-green-500/20 text-green-100"
             : "bg-red-500/20 text-red-100"
-          : "hover:bg-gray-700/50 dark:hover:bg-gray-600/50"
+          : "hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
       }`}
     >
       <div className="flex-1 text-left">
-        <span className="text-gray-300 dark:text-gray-300">
+        <span className="text-gray-700 dark:text-gray-300">
           {level.price.toFixed(2)}
         </span>
       </div>
       <div className="flex-1 text-center">
-        <span className="text-gray-400 dark:text-gray-400">
+        <span className="text-gray-600 dark:text-gray-400">
           {level.quantity.toFixed(6)}
         </span>
       </div>
@@ -53,7 +58,6 @@ function OrderBookRow({ level, isBid, isUpdating }: OrderBookRowProps) {
 }
 
 export default function OrderBook() {
-  const dispatch = useDispatch();
   const { data, isConnected, isInitialized } = useSelector(
     (state: RootState) => state.orderBook
   );
@@ -97,11 +101,13 @@ export default function OrderBook() {
   const formatPrice = (price: number) => price.toFixed(2);
 
   return (
-    <div className="h-full bg-gray-900 dark:bg-gray-900 text-white">
+    <div className="h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
       {/* Header */}
-      <div className="bg-gray-800 dark:bg-gray-800 border-b border-gray-700 dark:border-gray-600 p-3">
+      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600 p-3">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold text-white">Order Book</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Order Book
+          </h2>
           <div
             className={`w-2 h-2 rounded-full ${
               isConnected ? "bg-green-500" : "bg-red-500"
@@ -112,18 +118,22 @@ export default function OrderBook() {
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
-            <span className="text-gray-400">Spread:</span>
-            <span className="ml-1 text-white">{formatPrice(data.spread)}</span>
+            <span className="text-gray-600 dark:text-gray-400">Spread:</span>
+            <span className="ml-1 text-gray-900 dark:text-white">
+              {formatPrice(data.spread)}
+            </span>
           </div>
           <div>
-            <span className="text-gray-400">Mid:</span>
-            <span className="ml-1 text-white">
+            <span className="text-gray-600 dark:text-gray-400">Mid:</span>
+            <span className="ml-1 text-gray-900 dark:text-white">
               {formatPrice(data.midPrice)}
             </span>
           </div>
           <div>
-            <span className="text-gray-400">VWAP:</span>
-            <span className="ml-1 text-white">{formatPrice(data.vwap)}</span>
+            <span className="text-gray-600 dark:text-gray-400">VWAP:</span>
+            <span className="ml-1 text-gray-900 dark:text-white">
+              {formatPrice(data.vwap)}
+            </span>
           </div>
         </div>
       </div>
@@ -131,7 +141,7 @@ export default function OrderBook() {
       {/* Order Book Content */}
       <div className="flex flex-col h-full">
         {/* Column Headers */}
-        <div className="bg-gray-800 border-b border-gray-700 px-2 py-1 text-xs text-gray-400">
+        <div className="bg-gray-200 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 px-2 py-1 text-xs text-gray-600 dark:text-gray-400">
           <div className="flex justify-between">
             <span>Price</span>
             <span>Size</span>
@@ -141,10 +151,10 @@ export default function OrderBook() {
 
         {/* Asks (Sell Orders) */}
         <div className="flex-1 overflow-y-auto">
-          <div className="text-red-400 text-xs px-2 py-1 bg-red-900/20">
+          <div className="text-red-600 dark:text-red-400 text-xs px-2 py-1 bg-red-100/50 dark:bg-red-900/20">
             SELL
           </div>
-          {data.asks.slice(0, 20).map((level, index) => (
+          {data.asks.slice(0, 20).map((level) => (
             <OrderBookRow
               key={`ask-${level.price}`}
               level={level}
@@ -155,16 +165,16 @@ export default function OrderBook() {
         </div>
 
         {/* Mid Price Separator */}
-        <div className="bg-gray-700 border-y border-gray-600 px-2 py-1 text-center text-sm font-medium">
+        <div className="bg-gray-300 dark:bg-gray-700 border-y border-gray-400 dark:border-gray-600 px-2 py-1 text-center text-sm font-medium text-gray-900 dark:text-white">
           {formatPrice(data.midPrice)}
         </div>
 
         {/* Bids (Buy Orders) */}
         <div className="flex-1 overflow-y-auto">
-          <div className="text-green-400 text-xs px-2 py-1 bg-green-900/20">
+          <div className="text-green-600 dark:text-green-400 text-xs px-2 py-1 bg-green-100/50 dark:bg-green-900/20">
             BUY
           </div>
-          {data.bids.slice(0, 20).map((level, index) => (
+          {data.bids.slice(0, 20).map((level) => (
             <OrderBookRow
               key={`bid-${level.price}`}
               level={level}
@@ -177,7 +187,7 @@ export default function OrderBook() {
 
       {/* Connection Status */}
       {!isConnected && (
-        <div className="absolute bottom-4 left-4 right-4 bg-red-900/80 text-red-100 px-3 py-2 rounded text-sm">
+        <div className="absolute bottom-4 left-4 right-4 bg-red-100/90 dark:bg-red-900/80 text-red-800 dark:text-red-100 px-3 py-2 rounded text-sm">
           Disconnected from order book feed
         </div>
       )}
