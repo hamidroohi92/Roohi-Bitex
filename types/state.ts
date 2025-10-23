@@ -47,7 +47,6 @@ export interface OrderBookState {
 }
 
 export interface OrderTicketState {
-  ticket: OrderTicketData;
   balance: SimulatedBalance;
 }
 

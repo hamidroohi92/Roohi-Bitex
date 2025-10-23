@@ -1,32 +1,27 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { RootState } from "@/types/state";
 import { OrderSide } from "@/types/trade";
-import {
-  setSide,
-  setQuantity,
-  setCost,
-  setTotal,
-  setEstimatedFillPrice,
-  setEstimatedPnL,
-  setValidation,
-  updateBalance,
-  resetTicket,
-} from "@/redux/slices/orderTicketSlice";
+import { updateBalance } from "@/redux/slices/orderTicketSlice";
 import { formatCurrency } from "@/utils";
 
 export default function OrderTicket() {
   const dispatch = useDispatch();
-  const { ticket, balance } = useSelector(
-    (state: RootState) => state.orderTicket
-  );
+  const { balance } = useSelector((state: RootState) => state.orderTicket);
   const { data: orderBookData } = useSelector(
     (state: RootState) => state.orderBook
   );
-  const [inputMode, setInputMode] = useState<"quantity" | "cost">("quantity");
+
+  // Local state for form inputs
+  const [side, setSide] = useState<OrderSide>("buy");
+  const [quantity, setQuantity] = useState<number>(0);
+  const [cost, setCost] = useState<number>(0);
+  const [focusedInput, setFocusedInput] = useState<"quantity" | "cost" | null>(
+    null
+  );
 
   // Refs for keyboard navigation
   const buyButtonRef = useRef<HTMLButtonElement>(null);
@@ -40,107 +35,175 @@ export default function OrderTicket() {
   const bestAsk = orderBookData.asks[0]?.price || 0;
 
   // Calculate estimated fill price based on side
-  const estimatedFillPrice = ticket.side === "buy" ? bestAsk : bestBid;
+  const currentEstimatedFillPrice = side === "buy" ? bestAsk : bestBid;
 
-  // Auto-calculate cost/total when quantity or price changes
-  useEffect(() => {
-    if (ticket.quantity > 0 && estimatedFillPrice > 0) {
-      const cost = ticket.quantity * estimatedFillPrice;
-      dispatch(setCost(cost));
-      dispatch(setTotal(cost));
+  // Computed values using useMemo with focus-aware logic
+  const computedCost = useMemo(() => {
+    if (
+      focusedInput === "quantity" &&
+      quantity > 0 &&
+      currentEstimatedFillPrice > 0
+    ) {
+      return quantity * currentEstimatedFillPrice;
+    } else if (focusedInput === "cost") {
+      return cost;
+    } else if (quantity > 0 && currentEstimatedFillPrice > 0) {
+      return quantity * currentEstimatedFillPrice;
     }
-  }, [ticket.quantity, estimatedFillPrice, dispatch]);
+    return cost;
+  }, [quantity, currentEstimatedFillPrice, cost, focusedInput]);
 
-  // Calculate estimated PnL for ±0.5% price movement
-  useEffect(() => {
-    if (ticket.quantity > 0 && estimatedFillPrice > 0) {
-      const priceChange = estimatedFillPrice * 0.005; // 0.5%
+  const computedQuantity = useMemo(() => {
+    if (focusedInput === "cost" && cost > 0 && currentEstimatedFillPrice > 0) {
+      return cost / currentEstimatedFillPrice;
+    } else if (focusedInput === "quantity") {
+      return quantity;
+    } else if (cost > 0 && currentEstimatedFillPrice > 0) {
+      return cost / currentEstimatedFillPrice;
+    }
+    return quantity;
+  }, [quantity, cost, currentEstimatedFillPrice, focusedInput]);
 
-      let pnl = 0;
+  const computedEstimatedPnL = useMemo(() => {
+    const activeQuantity =
+      focusedInput === "quantity" ? quantity : computedQuantity;
+    if (activeQuantity > 0 && currentEstimatedFillPrice > 0) {
+      const priceChange = currentEstimatedFillPrice * 0.005; // 0.5%
 
-      if (ticket.side === "buy") {
+      if (side === "buy") {
         // For BUY orders: profit when price goes up, loss when price goes down
         // Calculate PnL for price going UP 0.5%
-        const priceUp = estimatedFillPrice + priceChange;
-        pnl = (priceUp - estimatedFillPrice) * ticket.quantity;
+        const priceUp = currentEstimatedFillPrice + priceChange;
+        return (priceUp - currentEstimatedFillPrice) * activeQuantity;
       } else {
         // For SELL orders: profit when price goes down, loss when price goes up
         // Calculate PnL for price going DOWN 0.5%
-        const priceDown = estimatedFillPrice - priceChange;
-        pnl = (estimatedFillPrice - priceDown) * ticket.quantity;
+        const priceDown = currentEstimatedFillPrice - priceChange;
+        return (currentEstimatedFillPrice - priceDown) * activeQuantity;
       }
-
-      dispatch(setEstimatedPnL(pnl));
     }
-  }, [ticket.quantity, estimatedFillPrice, ticket.side, dispatch]);
+    return 0;
+  }, [
+    quantity,
+    computedQuantity,
+    currentEstimatedFillPrice,
+    side,
+    focusedInput,
+  ]);
 
-  // Update estimated fill price
-  useEffect(() => {
-    dispatch(setEstimatedFillPrice(estimatedFillPrice));
-  }, [estimatedFillPrice, dispatch]);
+  const validation = useMemo(() => {
+    let newIsValid = true;
+    let newErrorMessage = "";
 
-  // Risk validation
-  useEffect(() => {
-    let isValid = true;
-    let errorMessage = "";
+    const activeQuantity =
+      focusedInput === "quantity" ? quantity : computedQuantity;
+    const activeCost = focusedInput === "cost" ? cost : computedCost;
 
-    if (ticket.quantity <= 0) {
-      isValid = false;
-      errorMessage = "Quantity must be greater than 0";
-    } else if (ticket.side === "buy" && ticket.cost > balance.usd) {
-      isValid = false;
-      errorMessage = `Insufficient USD balance. Required: $${ticket.cost.toFixed(
+    if (activeQuantity <= 0) {
+      newIsValid = false;
+      newErrorMessage = "Quantity must be greater than 0";
+    } else if (side === "buy" && activeCost > balance.usd) {
+      newIsValid = false;
+      newErrorMessage = `Insufficient USD balance. Required: $${activeCost.toFixed(
         2
       )}, Available: $${balance.usd.toFixed(2)}`;
-    } else if (ticket.side === "sell" && ticket.quantity > balance.btc) {
-      isValid = false;
-      errorMessage = `Insufficient BTC balance. Required: ${ticket.quantity.toFixed(
+    } else if (side === "sell" && activeQuantity > balance.btc) {
+      newIsValid = false;
+      newErrorMessage = `Insufficient BTC balance. Required: ${activeQuantity.toFixed(
         6
       )}, Available: ${balance.btc.toFixed(6)}`;
     }
 
-    dispatch(setValidation({ isValid, errorMessage }));
-  }, [ticket.quantity, ticket.cost, ticket.side, balance, dispatch]);
+    return { isValid: newIsValid, errorMessage: newErrorMessage };
+  }, [
+    quantity,
+    computedQuantity,
+    cost,
+    computedCost,
+    side,
+    balance,
+    focusedInput,
+  ]);
 
-  const handleSideChange = (side: OrderSide) => {
-    dispatch(setSide(side));
+  const handleSideChange = (newSide: OrderSide) => {
+    setSide(newSide);
   };
 
   const handleQuantityChange = (value: string) => {
-    const quantity = parseFloat(value) || 0;
-    dispatch(setQuantity(quantity));
+    const newQuantity = parseFloat(value) || 0;
+    setQuantity(newQuantity);
+    // Update cost when quantity changes and we're focused on quantity
+    if (newQuantity > 0 && currentEstimatedFillPrice > 0) {
+      setCost(newQuantity * currentEstimatedFillPrice);
+    }
   };
 
   const handleCostChange = (value: string) => {
-    const cost = parseFloat(value) || 0;
-    dispatch(setCost(cost));
-    if (estimatedFillPrice > 0) {
-      const quantity = cost / estimatedFillPrice;
-      dispatch(setQuantity(quantity));
+    const newCost = parseFloat(value) || 0;
+    setCost(newCost);
+    // Update quantity when cost changes and we're focused on cost
+    if (currentEstimatedFillPrice > 0) {
+      const newQuantity = newCost / currentEstimatedFillPrice;
+      setQuantity(newQuantity);
     }
   };
 
+  const handleQuantityFocus = () => {
+    setFocusedInput("quantity");
+  };
+
+  const handleCostFocus = () => {
+    setFocusedInput("cost");
+  };
+
+  const handleQuantityBlur = () => {
+    // Keep focus state for a short time to allow price updates to affect cost
+    setTimeout(() => {
+      if (focusedInput === "quantity") {
+        setFocusedInput(null);
+      }
+    }, 100);
+  };
+
+  const handleCostBlur = () => {
+    // Keep focus state for a short time to allow price updates to affect quantity
+    setTimeout(() => {
+      if (focusedInput === "cost") {
+        setFocusedInput(null);
+      }
+    }, 100);
+  };
+
   const handlePlaceOrder = () => {
-    if (!ticket.isValid) return;
+    if (!validation.isValid) return;
+
+    // Use computed values for order execution
+    const activeQuantity =
+      focusedInput === "quantity" ? quantity : computedQuantity;
+    const activeCost = focusedInput === "cost" ? cost : computedCost;
 
     // Simulate order execution
     const newBalance = { ...balance };
-    if (ticket.side === "buy") {
-      newBalance.usd -= ticket.cost;
-      newBalance.btc += ticket.quantity;
+    if (side === "buy") {
+      newBalance.usd -= activeCost;
+      newBalance.btc += activeQuantity;
     } else {
-      newBalance.usd += ticket.cost;
-      newBalance.btc -= ticket.quantity;
+      newBalance.usd += activeCost;
+      newBalance.btc -= activeQuantity;
     }
 
     dispatch(updateBalance(newBalance));
-    dispatch(resetTicket());
+
+    // Reset form
+    setQuantity(0);
+    setCost(0);
+    setFocusedInput(null);
 
     // Show success toast notification
     toast.success(
-      `Order placed successfully! ${ticket.side.toUpperCase()} ${ticket.quantity.toFixed(
+      `Order placed successfully! ${side.toUpperCase()} ${activeQuantity.toFixed(
         6
-      )} BTC at $${estimatedFillPrice.toFixed(2)}`,
+      )} BTC at $${currentEstimatedFillPrice.toFixed(2)}`,
       {
         position: "top-right",
         autoClose: 5000,
@@ -171,7 +234,7 @@ export default function OrderTicket() {
           break;
         case "Enter":
           e.preventDefault();
-          if (ticket.isValid) {
+          if (validation.isValid) {
             handlePlaceOrder();
           }
           break;
@@ -190,8 +253,6 @@ export default function OrderTicket() {
       handleSideChange("sell");
     }
   };
-
-  const formatQuantity = (value: number) => value.toFixed(6);
 
   return (
     <div
@@ -225,14 +286,14 @@ export default function OrderTicket() {
               ref={buyButtonRef}
               onClick={() => handleSideChange("buy")}
               className={`py-2 px-4 rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                ticket.side === "buy"
+                side === "buy"
                   ? "bg-green-600 text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
               role="radio"
-              aria-checked={ticket.side === "buy"}
+              aria-checked={side === "buy"}
               aria-label="Buy order"
-              tabIndex={ticket.side === "buy" ? 0 : -1}
+              tabIndex={side === "buy" ? 0 : -1}
             >
               BUY
             </button>
@@ -240,14 +301,14 @@ export default function OrderTicket() {
               ref={sellButtonRef}
               onClick={() => handleSideChange("sell")}
               className={`py-2 px-4 rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                ticket.side === "sell"
+                side === "sell"
                   ? "bg-red-600 text-white"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
               role="radio"
-              aria-checked={ticket.side === "sell"}
+              aria-checked={side === "sell"}
               aria-label="Sell order"
-              tabIndex={ticket.side === "sell" ? 0 : -1}
+              tabIndex={side === "sell" ? 0 : -1}
             >
               SELL
             </button>
@@ -268,8 +329,10 @@ export default function OrderTicket() {
               ref={quantityInputRef}
               type="number"
               step="0.000001"
-              value={ticket.quantity || ""}
+              value={focusedInput === "quantity" ? quantity : computedQuantity}
               onChange={(e) => handleQuantityChange(e.target.value)}
+              onFocus={handleQuantityFocus}
+              onBlur={handleQuantityBlur}
               className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="0.000000"
               aria-describedby="quantity-help"
@@ -296,8 +359,10 @@ export default function OrderTicket() {
               ref={costInputRef}
               type="number"
               step="0.01"
-              value={ticket.cost || ""}
+              value={focusedInput === "cost" ? cost : computedCost}
               onChange={(e) => handleCostChange(e.target.value)}
+              onFocus={handleCostFocus}
+              onBlur={handleCostBlur}
               className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="0.00"
               aria-describedby="cost-help"
@@ -319,7 +384,7 @@ export default function OrderTicket() {
               Estimated Fill Price
             </div>
             <div className="text-gray-900 dark:text-white font-medium text-lg">
-              {formatCurrency(estimatedFillPrice)}
+              {formatCurrency(currentEstimatedFillPrice)}
             </div>
           </div>
 
@@ -330,13 +395,13 @@ export default function OrderTicket() {
             </div>
             <div
               className={`font-medium text-lg ${
-                ticket.estimatedPnL >= 0
+                computedEstimatedPnL >= 0
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
               }`}
             >
-              {ticket.estimatedPnL >= 0 ? "+" : ""}
-              {formatCurrency(ticket.estimatedPnL)}
+              {computedEstimatedPnL >= 0 ? "+" : ""}
+              {formatCurrency(computedEstimatedPnL)}
             </div>
           </div>
         </div>
@@ -345,34 +410,32 @@ export default function OrderTicket() {
         <button
           ref={placeOrderButtonRef}
           onClick={handlePlaceOrder}
-          disabled={!ticket.isValid}
+          disabled={!validation.isValid}
           className={`w-full py-3 px-4 rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            ticket.isValid
-              ? ticket.side === "buy"
+            validation.isValid
+              ? side === "buy"
                 ? "bg-green-600 hover:bg-green-700 text-white"
                 : "bg-red-600 hover:bg-red-700 text-white"
               : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
           }`}
-          aria-describedby={!ticket.isValid ? "error-message" : undefined}
+          aria-describedby={!validation.isValid ? "error-message" : undefined}
           aria-label={
-            ticket.isValid
-              ? `Place ${ticket.side} order`
-              : "Order button disabled"
+            validation.isValid ? `Place ${side} order` : "Order button disabled"
           }
         >
-          {ticket.isValid
-            ? `Place ${ticket.side.toUpperCase()} Order`
-            : ticket.errorMessage}
+          {validation.isValid
+            ? `Place ${side.toUpperCase()} Order`
+            : validation.errorMessage}
         </button>
 
-        {!ticket.isValid && (
+        {!validation.isValid && (
           <p
             id="error-message"
             className="text-sm text-red-600 dark:text-red-400 mt-2"
             role="alert"
             aria-live="polite"
           >
-            {ticket.errorMessage}
+            {validation.errorMessage}
           </p>
         )}
       </div>
