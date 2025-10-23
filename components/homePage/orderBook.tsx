@@ -181,13 +181,6 @@ export default function OrderBook() {
           ))}
         </div>
       </div>
-
-      {/* Connection Status */}
-      {!isConnected && (
-        <div className="absolute bottom-4 left-4 right-4 bg-red-100/90 dark:bg-red-900/80 text-red-800 dark:text-red-100 px-3 py-2 rounded text-sm">
-          Disconnected from order book feed
-        </div>
-      )}
     </div>
   );
 }
