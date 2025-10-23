@@ -10,3 +10,8 @@ export interface SymbolState {
   currentPrice: number;
   candles: Candle[];
 }
+
+export interface RootState {
+  app: AppState;
+  symbol: SymbolState;
+}
