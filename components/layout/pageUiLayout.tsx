@@ -1,5 +1,6 @@
 import Header from "./header";
 
+//UI layout for the whole app. This will organize all the pages styles and components.
 export default function PageUiLayout({
   children,
 }: {

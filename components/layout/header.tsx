@@ -1,3 +1,6 @@
+"use client";
+
+//Header component as a global top bar for the app
 export default function Header() {
   const balance = 200000;
   return (
