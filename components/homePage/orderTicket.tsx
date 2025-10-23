@@ -132,22 +132,6 @@ export default function OrderTicket() {
     <div className="h-full bg-gray-900 text-white p-4">
       <div className="mb-4">
         <h2 className="text-lg font-semibold mb-2">Order Ticket</h2>
-
-        {/* Balance Display */}
-        <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-          <div className="bg-gray-800 p-2 rounded">
-            <div className="text-gray-400">USD Balance</div>
-            <div className="text-white font-medium">
-              ${formatCurrency(balance.usd)}
-            </div>
-          </div>
-          <div className="bg-gray-800 p-2 rounded">
-            <div className="text-gray-400">BTC Balance</div>
-            <div className="text-white font-medium">
-              {formatQuantity(balance.btc)}
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="space-y-4">
@@ -178,35 +162,8 @@ export default function OrderTicket() {
           </div>
         </div>
 
-        {/* Input Mode Toggle */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Input Mode</label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setInputMode("quantity")}
-              className={`py-2 px-4 rounded text-sm transition-colors ${
-                inputMode === "quantity"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              Quantity
-            </button>
-            <button
-              onClick={() => setInputMode("cost")}
-              className={`py-2 px-4 rounded text-sm transition-colors ${
-                inputMode === "cost"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              Cost
-            </button>
-          </div>
-        </div>
-
-        {/* Quantity Input */}
-        {inputMode === "quantity" && (
+        <div className="grid grid-cols-2 gap-4">
+          {/* Quantity Input */}
           <div>
             <label className="block text-sm font-medium mb-2">
               Quantity (BTC)
@@ -220,10 +177,8 @@ export default function OrderTicket() {
               placeholder="0.000000"
             />
           </div>
-        )}
 
-        {/* Cost Input */}
-        {inputMode === "cost" && (
+          {/* Cost Input */}
           <div>
             <label className="block text-sm font-medium mb-2">Cost (USD)</label>
             <input
@@ -235,51 +190,30 @@ export default function OrderTicket() {
               placeholder="0.00"
             />
           </div>
-        )}
+        </div>
 
-        {/* Auto-calculated values */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-2 gap-4">
+          {/* Estimated Fill Price */}
           <div className="bg-gray-800 p-3 rounded">
-            <div className="text-gray-400">Quantity</div>
-            <div className="text-white font-medium">
-              {formatQuantity(ticket.quantity)}
+            <div className="text-gray-400 text-sm">Estimated Fill Price</div>
+            <div className="text-white font-medium text-lg">
+              ${formatCurrency(estimatedFillPrice)}
             </div>
           </div>
+
+          {/* Estimated PnL */}
           <div className="bg-gray-800 p-3 rounded">
-            <div className="text-gray-400">Total Cost</div>
-            <div className="text-white font-medium">
-              ${formatCurrency(ticket.cost)}
+            <div className="text-gray-400 text-sm">Estimated PnL (±0.5%)</div>
+            <div
+              className={`font-medium text-lg ${
+                ticket.estimatedPnL >= 0 ? "text-green-400" : "text-red-400"
+              }`}
+            >
+              {ticket.estimatedPnL >= 0 ? "+" : ""}$
+              {formatCurrency(ticket.estimatedPnL)}
             </div>
           </div>
         </div>
-
-        {/* Estimated Fill Price */}
-        <div className="bg-gray-800 p-3 rounded">
-          <div className="text-gray-400 text-sm">Estimated Fill Price</div>
-          <div className="text-white font-medium text-lg">
-            ${formatCurrency(estimatedFillPrice)}
-          </div>
-        </div>
-
-        {/* Estimated PnL */}
-        <div className="bg-gray-800 p-3 rounded">
-          <div className="text-gray-400 text-sm">Estimated PnL (±0.5%)</div>
-          <div
-            className={`font-medium text-lg ${
-              ticket.estimatedPnL >= 0 ? "text-green-400" : "text-red-400"
-            }`}
-          >
-            {ticket.estimatedPnL >= 0 ? "+" : ""}$
-            {formatCurrency(ticket.estimatedPnL)}
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {ticket.errorMessage && (
-          <div className="bg-red-900/20 border border-red-500 text-red-200 p-3 rounded text-sm">
-            {ticket.errorMessage}
-          </div>
-        )}
 
         {/* Place Order Button */}
         <button
@@ -293,7 +227,9 @@ export default function OrderTicket() {
               : "bg-gray-600 text-gray-400 cursor-not-allowed"
           }`}
         >
-          Place {ticket.side.toUpperCase()} Order
+          {ticket.isValid
+            ? `Place ${ticket.side.toUpperCase()} Order`
+            : ticket.errorMessage}
         </button>
       </div>
     </div>
