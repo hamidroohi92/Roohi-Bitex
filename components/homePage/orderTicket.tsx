@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { toast } from "react-toastify";
 import { RootState } from "@/types/state";
 import { OrderSide } from "@/types/trade";
 import {
@@ -135,11 +136,20 @@ export default function OrderTicket() {
     dispatch(updateBalance(newBalance));
     dispatch(resetTicket());
 
-    // Show success message (in real app, this would be handled by a notification system)
-    alert(
+    // Show success toast notification
+    toast.success(
       `Order placed successfully! ${ticket.side.toUpperCase()} ${ticket.quantity.toFixed(
         6
-      )} BTC at $${estimatedFillPrice.toFixed(2)}`
+      )} BTC at $${estimatedFillPrice.toFixed(2)}`,
+      {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark",
+      }
     );
   };
 

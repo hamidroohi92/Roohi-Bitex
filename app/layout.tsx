@@ -5,6 +5,8 @@ import "./globals.css";
 import PageUiLayout from "@/components/layout/pageUiLayout";
 import Providers from "@/components/providers";
 import ConnectionStatus from "@/components/ui/connectionStatus";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +31,18 @@ export default function RootLayout({
         <Providers>
           <PageUiLayout>{children}</PageUiLayout>
           <ConnectionStatus />
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
         </Providers>
       </body>
     </html>
