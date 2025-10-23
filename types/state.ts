@@ -16,11 +16,19 @@ export interface SymbolState {
   candles: Candle[];
 }
 
+export interface LevelUpdate {
+  price: number;
+  isBid: boolean;
+  direction: "up" | "down";
+  timestamp: number;
+}
+
 export interface OrderBookState {
   data: OrderBookData;
   isConnected: boolean;
   lastUpdateId: number;
   isInitialized: boolean;
+  levelUpdates: LevelUpdate[];
 }
 
 export interface OrderTicketState {

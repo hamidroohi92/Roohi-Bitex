@@ -47,11 +47,21 @@ export default function OrderTicket() {
   useEffect(() => {
     if (ticket.quantity > 0 && estimatedFillPrice > 0) {
       const priceChange = estimatedFillPrice * 0.005; // 0.5%
-      const newPrice = estimatedFillPrice + priceChange;
-      const pnl =
-        ticket.side === "buy"
-          ? (newPrice - estimatedFillPrice) * ticket.quantity
-          : (estimatedFillPrice - newPrice) * ticket.quantity;
+
+      let pnl = 0;
+
+      if (ticket.side === "buy") {
+        // For BUY orders: profit when price goes up, loss when price goes down
+        // Calculate PnL for price going UP 0.5%
+        const priceUp = estimatedFillPrice + priceChange;
+        pnl = (priceUp - estimatedFillPrice) * ticket.quantity;
+      } else {
+        // For SELL orders: profit when price goes down, loss when price goes up
+        // Calculate PnL for price going DOWN 0.5%
+        const priceDown = estimatedFillPrice - priceChange;
+        pnl = (estimatedFillPrice - priceDown) * ticket.quantity;
+      }
+
       dispatch(setEstimatedPnL(pnl));
     }
   }, [ticket.quantity, estimatedFillPrice, ticket.side, dispatch]);
@@ -205,7 +215,7 @@ export default function OrderTicket() {
               Estimated Fill Price
             </div>
             <div className="text-gray-900 dark:text-white font-medium text-lg">
-              ${formatCurrency(estimatedFillPrice)}
+              {formatCurrency(estimatedFillPrice)}
             </div>
           </div>
 
@@ -221,7 +231,7 @@ export default function OrderTicket() {
                   : "text-red-600 dark:text-red-400"
               }`}
             >
-              {ticket.estimatedPnL >= 0 ? "+" : ""}$
+              {ticket.estimatedPnL >= 0 ? "+" : ""}
               {formatCurrency(ticket.estimatedPnL)}
             </div>
           </div>

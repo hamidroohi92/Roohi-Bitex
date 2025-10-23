@@ -2,41 +2,55 @@
 
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/types/state";
+import { RootState, LevelUpdate } from "@/types/state";
 import { orderBookService } from "@/lib/orderBook";
 import { OrderBookLevel } from "@/types/trade";
 
 interface OrderBookRowProps {
   level: OrderBookLevel;
   isBid: boolean;
-  isUpdating?: boolean;
+  updateInfo?: LevelUpdate;
 }
 
-function OrderBookRow({ level, isBid, isUpdating }: OrderBookRowProps) {
+function OrderBookRow({ level, updateInfo }: OrderBookRowProps) {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [animationDirection, setAnimationDirection] = useState<
+    "up" | "down" | null
+  >(null);
 
   useEffect(() => {
-    if (isUpdating && !isAnimating) {
+    if (updateInfo && !isAnimating) {
       // Use requestAnimationFrame to avoid synchronous setState in effect
       requestAnimationFrame(() => {
+        setAnimationDirection(updateInfo.direction);
         setIsAnimating(true);
-        const timer = setTimeout(() => {
-          setIsAnimating(false);
-        }, 1000);
-        return () => clearTimeout(timer);
       });
+
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+        setAnimationDirection(null);
+      }, 1000);
+
+      return () => clearTimeout(timer);
     }
-  }, [isUpdating, isAnimating]);
+  }, [updateInfo, isAnimating]);
+
+  const getAnimationClasses = () => {
+    if (!isAnimating || !animationDirection) {
+      return "hover:bg-gray-200/50 dark:hover:bg-gray-700/50";
+    }
+
+    // Green for increases (up), red for decreases (down)
+    if (animationDirection === "up") {
+      return "bg-green-500/20 text-green-100";
+    } else {
+      return "bg-red-500/20 text-red-100";
+    }
+  };
 
   return (
     <div
-      className={`flex justify-between items-center py-1 px-2 text-sm transition-colors duration-1000 ${
-        isAnimating
-          ? isBid
-            ? "bg-green-500/20 text-green-100"
-            : "bg-red-500/20 text-red-100"
-          : "hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
-      }`}
+      className={`flex justify-between items-center py-1 px-2 text-sm transition-colors duration-1000 ${getAnimationClasses()}`}
     >
       <div className="flex-1 text-left">
         <span className="text-gray-700 dark:text-gray-300">
@@ -58,11 +72,10 @@ function OrderBookRow({ level, isBid, isUpdating }: OrderBookRowProps) {
 }
 
 export default function OrderBook() {
-  const { data, isConnected, isInitialized } = useSelector(
+  const { data, isConnected, levelUpdates } = useSelector(
     (state: RootState) => state.orderBook
   );
   const { symbol } = useSelector((state: RootState) => state.symbol);
-  const [updatingLevels, setUpdatingLevels] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     orderBookService.connect(symbol.toLowerCase());
@@ -72,31 +85,15 @@ export default function OrderBook() {
     };
   }, [symbol]);
 
-  // Simulate level updates for animation (in real implementation, this would be triggered by actual updates)
-  useEffect(() => {
-    if (isInitialized) {
-      const interval = setInterval(() => {
-        // Randomly select a level to animate
-        const allLevels = [...data.bids, ...data.asks];
-        if (allLevels.length > 0) {
-          const randomLevel =
-            allLevels[Math.floor(Math.random() * allLevels.length)];
-          const levelKey = `${randomLevel.price}`;
-
-          setUpdatingLevels((prev) => new Set([...prev, levelKey]));
-          setTimeout(() => {
-            setUpdatingLevels((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(levelKey);
-              return newSet;
-            });
-          }, 1000);
-        }
-      }, 3000);
-
-      return () => clearInterval(interval);
-    }
-  }, [isInitialized, data.bids, data.asks]);
+  // Helper function to find level update info
+  const findLevelUpdate = (
+    price: number,
+    isBid: boolean
+  ): LevelUpdate | undefined => {
+    return levelUpdates.find(
+      (update) => update.price === price && update.isBid === isBid
+    );
+  };
 
   const formatPrice = (price: number) => price.toFixed(2);
 
@@ -159,7 +156,7 @@ export default function OrderBook() {
               key={`ask-${level.price}`}
               level={level}
               isBid={false}
-              isUpdating={updatingLevels.has(`${level.price}`)}
+              updateInfo={findLevelUpdate(level.price, false)}
             />
           ))}
         </div>
@@ -179,7 +176,7 @@ export default function OrderBook() {
               key={`bid-${level.price}`}
               level={level}
               isBid={true}
-              isUpdating={updatingLevels.has(`${level.price}`)}
+              updateInfo={findLevelUpdate(level.price, true)}
             />
           ))}
         </div>

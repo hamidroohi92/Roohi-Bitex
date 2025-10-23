@@ -1,4 +1,4 @@
-import { OrderBookState } from "@/types/state";
+import { OrderBookState, LevelUpdate } from "@/types/state";
 import { OrderBookData, OrderBookLevel, OrderBookUpdate } from "@/types/trade";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
@@ -16,6 +16,7 @@ const initialState: OrderBookState = {
   isConnected: false,
   lastUpdateId: 0,
   isInitialized: false,
+  levelUpdates: [],
 };
 
 const orderBookSlice = createSlice({
@@ -30,6 +31,9 @@ const orderBookSlice = createSlice({
     },
     setLastUpdateId: (state, action: PayloadAction<number>) => {
       state.lastUpdateId = action.payload;
+    },
+    clearLevelUpdates: (state) => {
+      state.levelUpdates = [];
     },
     updateOrderBook: (state, action: PayloadAction<OrderBookData>) => {
       state.data = action.payload;
@@ -115,6 +119,14 @@ const orderBookSlice = createSlice({
         return;
       }
 
+      // Store previous levels for comparison
+      const previousBidMap = new Map(
+        state.data.bids.map((level) => [level.price, level.quantity])
+      );
+      const previousAskMap = new Map(
+        state.data.asks.map((level) => [level.price, level.quantity])
+      );
+
       // Apply bid updates
       const bidMap = new Map(
         state.data.bids.map((level) => [level.price, level])
@@ -153,6 +165,67 @@ const orderBookSlice = createSlice({
       const updatedAsks = Array.from(askMap.values())
         .sort((a, b) => a.price - b.price)
         .slice(0, 20);
+
+      // Track level changes for color-tick animation
+      const newLevelUpdates: LevelUpdate[] = [];
+      const currentTime = Date.now();
+
+      // Get previous best prices for comparison
+      const previousBestBid = state.data.bids[0]?.price || 0;
+      const previousBestAsk = state.data.asks[0]?.price || 0;
+
+      // Check bid changes - for bids, more quantity is better (green), less quantity is worse (red)
+      updatedBids.forEach((level) => {
+        const previousQuantity = previousBidMap.get(level.price) || 0;
+        if (previousQuantity !== level.quantity) {
+          // For bids: quantity increase = more buying pressure (green), quantity decrease = less buying pressure (red)
+          const direction = level.quantity > previousQuantity ? "up" : "down";
+          newLevelUpdates.push({
+            price: level.price,
+            isBid: true,
+            direction,
+            timestamp: currentTime,
+          });
+        }
+      });
+
+      // Check ask changes - for asks, less quantity is better (green), more quantity is worse (red)
+      updatedAsks.forEach((level) => {
+        const previousQuantity = previousAskMap.get(level.price) || 0;
+        if (previousQuantity !== level.quantity) {
+          // For asks: quantity decrease = less selling pressure (green), quantity increase = more selling pressure (red)
+          const direction = level.quantity < previousQuantity ? "up" : "down";
+          newLevelUpdates.push({
+            price: level.price,
+            isBid: false,
+            direction,
+            timestamp: currentTime,
+          });
+        }
+      });
+
+      // Check for removed levels (quantity became 0)
+      previousBidMap.forEach((quantity, price) => {
+        if (quantity > 0 && !bidMap.has(price)) {
+          newLevelUpdates.push({
+            price,
+            isBid: true,
+            direction: "down",
+            timestamp: currentTime,
+          });
+        }
+      });
+
+      previousAskMap.forEach((quantity, price) => {
+        if (quantity > 0 && !askMap.has(price)) {
+          newLevelUpdates.push({
+            price,
+            isBid: false,
+            direction: "down",
+            timestamp: currentTime,
+          });
+        }
+      });
 
       // Recalculate cumulative sizes
       let cumulativeBid = 0;
@@ -196,6 +269,15 @@ const orderBookSlice = createSlice({
         vwap,
       };
       state.lastUpdateId = update.u;
+
+      // Add new level updates and clean up old ones (older than 2 seconds)
+      const twoSecondsAgo = currentTime - 2000;
+      state.levelUpdates = [
+        ...state.levelUpdates.filter(
+          (update) => update.timestamp > twoSecondsAgo
+        ),
+        ...newLevelUpdates,
+      ];
     },
   },
 });
@@ -204,6 +286,7 @@ export const {
   setConnected,
   setInitialized,
   setLastUpdateId,
+  clearLevelUpdates,
   updateOrderBook,
   initializeOrderBook,
   applyOrderBookUpdate,
