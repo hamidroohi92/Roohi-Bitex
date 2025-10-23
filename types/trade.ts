@@ -31,3 +31,21 @@ export interface OrderBookUpdate {
   b: [string, string][]; // bids
   a: [string, string][]; // asks
 }
+
+export type OrderSide = "buy" | "sell";
+
+export interface OrderTicketState {
+  side: OrderSide;
+  quantity: number;
+  cost: number;
+  total: number;
+  estimatedFillPrice: number;
+  estimatedPnL: number;
+  isValid: boolean;
+  errorMessage: string;
+}
+
+export interface SimulatedBalance {
+  usd: number;
+  btc: number;
+}
