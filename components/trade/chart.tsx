@@ -29,7 +29,7 @@ export default function Chart() {
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: chartContainerRef.current.clientHeight,
+      height: chartContainerRef.current.clientHeight - 50,
       layout: {
         background: {
           type: ColorType.Solid,
@@ -49,6 +49,7 @@ export default function Chart() {
       },
       timeScale: {
         borderColor: theme === "dark" ? "#374151" : "#e5e7eb",
+        barSpacing: 10,
       },
     });
 
@@ -62,6 +63,9 @@ export default function Chart() {
 
     chartRef.current = chart;
     seriesRef.current = series;
+
+    chart.timeScale().fitContent();
+    chart.timeScale().scrollToPosition(5, false);
 
     return () => chart.remove();
   }, [theme]);
